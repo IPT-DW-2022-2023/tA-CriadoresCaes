@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CriadorCaes.Models {
 
@@ -49,6 +50,7 @@ namespace CriadorCaes.Models {
       /// FK para o Criador do cão/cadela
       /// </summary>
       [ForeignKey(nameof(Criador))]
+      [Display(Name ="Criador")] // texto que irá aparecer no ecrã
       public int CriadorFK { get; set; }
       public Criadores Criador { get; set; } // efetivamente, esta é q é a FK, para a EF
       /*
@@ -64,6 +66,7 @@ namespace CriadorCaes.Models {
       /// FK do Animal para a sua Raça
       /// </summary>
       [ForeignKey(nameof(Raca))]
+      [Display(Name ="Raça")]
       public int RacaFK { get; set; }
       public Racas Raca { get; set; }
 
