@@ -10,10 +10,24 @@ using CriadorCaes.Models;
 
 namespace CriadorCaes.Controllers {
    public class AnimaisController : Controller {
+
+      /// <summary>
+      /// objeto que referencia a Base de Dados do projeto
+      /// </summary>
       private readonly ApplicationDbContext _bd;
 
-      public AnimaisController(ApplicationDbContext context) {
+      /// <summary>
+      /// Este recurso (tecnicamente, um atributo) mostra os 
+      /// dados do servidor. 
+      /// É necessário inicializar este atributo no construtor da classe
+      /// </summary>
+      private readonly IWebHostEnvironment _webHostEnvironment;
+
+      public AnimaisController(
+                    ApplicationDbContext context,
+                    IWebHostEnvironment webHostEnvironment) {
          _bd = context;
+         _webHostEnvironment = webHostEnvironment;
       }
 
       // GET: Animais
@@ -71,6 +85,9 @@ namespace CriadorCaes.Controllers {
       [HttpPost]
       [ValidateAntiForgeryToken]
       public async Task<IActionResult> Create([Bind("Id,Nome,DataNascimento,DataCompra,Sexo,NumLOP,CriadorFK,RacaFK")] Animais animal, IFormFile fotografia) {
+         // vars. auxiliares
+         string nomeFoto = "";
+         bool existeFoto = false;
 
          // validação da Raça
          if (animal.RacaFK == 0) {
@@ -83,13 +100,53 @@ namespace CriadorCaes.Controllers {
             }
             else {
                // existe foto? é válida?
+               if (fotografia == null) {
+                  // não há foto.
+                  // adiciona-se a foto prédefinida
+                  animal.ListaFotografias
+                        .Add(new Fotografias {
+                           DataFotografia = DateTime.Now,
+                           Local = "No foto",
+                           NomeFicheiro = "noAnimal.jpg"
+                        });
+               }
+               else {
+                  // há ficheiro.
+                  // Mas, será válido?
+                  if (fotografia.ContentType == "image/jpeg" ||
+                     fotografia.ContentType == "image/png") {
+                     // imagem válida
+                     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
+                     // vamos processar a imagem
 
-
-
-
-
-
-
+                     // definir o nome da imagem
+                     Guid g = Guid.NewGuid();
+                     nomeFoto = g.ToString();
+                     string extensaoDaFoto =
+                        Path.GetExtension(fotografia.FileName).ToLower();
+                     nomeFoto += extensaoDaFoto;
+                     // adiciona-se a foto à lista de fotografias
+                     animal.ListaFotografias
+                           .Add(new Fotografias {
+                              DataFotografia = DateTime.Now,
+                              Local = "",
+                              NomeFicheiro = nomeFoto
+                           });
+                     // preparar a foto para ser guardada
+                     // no disco rígido do servidor
+                     existeFoto = true;
+                  }
+                  else {
+                     // existe ficheiro, mas não é válido
+                     // adiciona-se a foto prédefinida
+                     animal.ListaFotografias
+                           .Add(new Fotografias {
+                              DataFotografia = DateTime.Now,
+                              Local = "No foto",
+                              NomeFicheiro = "noAnimal.jpg"
+                           });
+                  }
+               }
 
                // Validação final dos dados recebidos do browser
                // só se avança, se forem corretos. Ie, se respeitarem as regras
@@ -101,6 +158,38 @@ namespace CriadorCaes.Controllers {
                      _bd.Add(animal);
                      // efetuar COMMIT dos dados
                      await _bd.SaveChangesAsync();
+
+                     // agora já posso guardar a imagem no disco 
+                     // rígido do servidor
+                     if (existeFoto) {
+                        // definir o locar onde a foto vai ser guardada
+                        // para isso vamos perguntar ao servidor onde está 
+                        // a pasta wwwroot/imagens
+                        string nomeLocalizacaoImagem = _webHostEnvironment.WebRootPath;
+
+                        //    - falta definir o nome que o ficheiro vai ter no disco rígido
+                        nomeLocalizacaoImagem =
+                           Path.Combine(nomeLocalizacaoImagem, "imagens");
+
+                        //    - falta garantir que a pasta onde se vai guardar o ficheiro existe
+                        if (!Directory.Exists(nomeLocalizacaoImagem)) {
+                           Directory.CreateDirectory(nomeLocalizacaoImagem);
+                        }
+
+                        //    - agora já é possível guardar a imagem
+                        //         - definir o nome da imagem no disco rígido
+                        string nomeFotoImagem = Path.Combine(nomeLocalizacaoImagem, nomeFoto);
+
+                        //         - criar objeto para manipular a imagem
+                        using var stream = new FileStream(nomeFotoImagem, FileMode.Create);
+
+                        //         - guardar, realmente, o ficheiro no disco rígido
+                        await fotografia.CopyToAsync(stream);
+                     }
+
+
+
+
                      // redirecionar o utilizador para a página inicial
                      return RedirectToAction(nameof(Index));
                   }
