@@ -22,12 +22,16 @@ namespace CriadorCaes.Models {
       /// <summary>
       /// data de nascimento do cão/cadela
       /// </summary>
+      [Required(ErrorMessage ="a {0} é de preenchimento obrigatório.")]
       public DateTime DataNascimento { get; set; }
 
       /// <summary>
       /// data de aquisição do cão/cadela
       /// </summary>
-      public DateTime DataCompra { get; set; }
+      public DateTime? DataCompra { get; set; }
+      // o uso do ? torna este atributo de preenchimento facultativo
+      // se já tiver sido definida a estrutura da BD
+      // é necessário criar uma nova Migration
 
       /// <summary>
       /// sexo do animal: 
