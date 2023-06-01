@@ -45,9 +45,15 @@ namespace CriadorCaes.Controllers {
             return NotFound();
          }
 
+         /// SELECT *
+         /// FROM Animais a INNER JOIN Criadores c ON a.CriadorFK = c.Id
+         ///                INNER JOIN Racas r ON a.RacaFK = r.Id
+         ///                INNER JOIN Fotografias f ON f.AnimalFK = a.Id
+         /// WHERE a.Id = id
          var animal = await _bd.Animais
                                 .Include(a => a.Criador)
                                 .Include(a => a.Raca)
+                                .Include(a=>a.ListaFotografias)
                                 .FirstOrDefaultAsync(m => m.Id == id);
          if (animal == null) {
             return NotFound();
