@@ -53,7 +53,7 @@ namespace CriadorCaes.Controllers {
          var animal = await _bd.Animais
                                 .Include(a => a.Criador)
                                 .Include(a => a.Raca)
-                                .Include(a=>a.ListaFotografias)
+                                .Include(a => a.ListaFotografias)
                                 .FirstOrDefaultAsync(m => m.Id == id);
          if (animal == null) {
             return NotFound();
@@ -90,7 +90,15 @@ namespace CriadorCaes.Controllers {
       /// <returns></returns>
       [HttpPost]
       [ValidateAntiForgeryToken]
-      public async Task<IActionResult> Create([Bind("Id,Nome,DataNascimento,DataCompra,Sexo,NumLOP,CriadorFK,RacaFK")] Animais animal, IFormFile fotografia) {
+      public async Task<IActionResult> Create([Bind("Nome,DataNascimento,DataCompra,PrecoCompra,PrecoCompraAux,Sexo,NumLOP,CriadorFK,RacaFK")] Animais animal, IFormFile fotografia) {
+         /*
+          * qd se adiciona um novo atributo ao Modelo,
+          * É NECESSÁRIO adicionar esse atrributo ao Bind.
+          * Se não for feito, o seu valor será descartado
+          */
+
+
+
          // vars. auxiliares
          string nomeFoto = "";
          bool existeFoto = false;
@@ -153,6 +161,15 @@ namespace CriadorCaes.Controllers {
                            });
                   }
                }
+
+
+               // atribuir o valor do PrecoCompraAux, se existir,
+               // ao atributo PrecoCompra
+               if (!string.IsNullOrEmpty(animal.PrecoCompraAux)) {
+                  animal.PrecoCompra = Convert.ToDecimal(animal.PrecoCompraAux.Replace('.', ','));
+               }
+
+
 
                // Validação final dos dados recebidos do browser
                // só se avança, se forem corretos. Ie, se respeitarem as regras

@@ -9,7 +9,7 @@ namespace CriadorCaes.Models {
    public class Animais {
 
       public Animais() {
-         ListaFotografias=new HashSet<Fotografias>();
+         ListaFotografias = new HashSet<Fotografias>();
       }
 
       public int Id { get; set; }
@@ -22,7 +22,7 @@ namespace CriadorCaes.Models {
       /// <summary>
       /// data de nascimento do cão/cadela
       /// </summary>
-      [Required(ErrorMessage ="a {0} é de preenchimento obrigatório.")]
+      [Required(ErrorMessage = "a {0} é de preenchimento obrigatório.")]
       public DateTime DataNascimento { get; set; }
 
       /// <summary>
@@ -32,6 +32,22 @@ namespace CriadorCaes.Models {
       // o uso do ? torna este atributo de preenchimento facultativo
       // se já tiver sido definida a estrutura da BD
       // é necessário criar uma nova Migration
+
+
+      /// <summary>
+      /// preço de aquisição do cão/cadela
+      /// </summary>
+      public decimal PrecoCompra { get; set; }
+
+      /// <summary>
+      /// atributo auxiliar para ajudar a introdução de dados
+      /// sobre o preço de compra do animal
+      /// </summary>
+      [NotMapped] // esta anotação instrui a Migration para ignorar este atributo
+      [RegularExpression("[0-9]+(.|,)?[0-9]{0,2}",
+         ErrorMessage ="tem de escrever algarismos, com até dois digitos para a parte fracionária do {0}")]
+      public string PrecoCompraAux { get; set; }
+
 
       /// <summary>
       /// sexo do animal: 
@@ -54,7 +70,7 @@ namespace CriadorCaes.Models {
       /// FK para o Criador do cão/cadela
       /// </summary>
       [ForeignKey(nameof(Criador))]
-      [Display(Name ="Criador")] // texto que irá aparecer no ecrã
+      [Display(Name = "Criador")] // texto que irá aparecer no ecrã
       public int CriadorFK { get; set; }
       public Criadores Criador { get; set; } // efetivamente, esta é q é a FK, para a EF
       /*
@@ -70,7 +86,7 @@ namespace CriadorCaes.Models {
       /// FK do Animal para a sua Raça
       /// </summary>
       [ForeignKey(nameof(Raca))]
-      [Display(Name ="Raça")]
+      [Display(Name = "Raça")]
       public int RacaFK { get; set; }
       public Racas Raca { get; set; }
 

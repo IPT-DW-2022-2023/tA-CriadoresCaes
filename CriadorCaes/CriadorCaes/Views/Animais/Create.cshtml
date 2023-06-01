@@ -35,6 +35,13 @@
             <span asp-validation-for="DataCompra" class="text-danger"></span>
          </div>
 
+         @* adição do novo atributo *@
+         <div class="form-group">
+            <label asp-for="PrecoCompraAux" class="control-label"></label>
+            <input asp-for="PrecoCompraAux" class="form-control" />
+            <span asp-validation-for="PrecoCompraAux" class="text-danger"></span>
+         </div>
+
          <div class="form-group">
             <label asp-for="Sexo" class="control-label"></label>
             <input asp-for="Sexo" class="form-control" />
