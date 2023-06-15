@@ -10,10 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 // ***************************************************
 
 
-// esta variável contém a localização do servidor
-// a localização do Servidor está escrita no ficheiro 'appSettings.json'
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")??throw new InvalidOperationException("A BD referenciada pela Connection string 'DefaultConnection' não foi encontrada.");
-// inicializar o serviço de acesso à BD (Sql Server)
+// esta variï¿½vel contï¿½m a localizaï¿½ï¿½o do servidor
+// a localizaï¿½ï¿½o do Servidor estï¿½ escrita no ficheiro 'appSettings.json'
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")??throw new InvalidOperationException("A BD referenciada pela Connection string 'DefaultConnection' nï¿½o foi encontrada.");
+// inicializar o serviï¿½o de acesso ï¿½ BD (Sql Server)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
