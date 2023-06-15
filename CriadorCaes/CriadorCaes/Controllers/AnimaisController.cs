@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using CriadorCaes.Data;
 using CriadorCaes.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace CriadorCaes.Controllers {
 
@@ -20,6 +21,11 @@ namespace CriadorCaes.Controllers {
       private readonly ApplicationDbContext _bd;
 
       /// <summary>
+      /// ferramenta com acesso aos dados da pessoa autenticada
+      /// </summary>
+      private readonly UserManager<IdentityUser> _userManager;
+
+      /// <summary>
       /// Este recurso (tecnicamente, um atributo) mostra os 
       /// dados do servidor. 
       /// É necessário inicializar este atributo no construtor da classe
@@ -28,15 +34,29 @@ namespace CriadorCaes.Controllers {
 
       public AnimaisController(
                     ApplicationDbContext context,
-                    IWebHostEnvironment webHostEnvironment) {
+                    IWebHostEnvironment webHostEnvironment,
+                    UserManager<IdentityUser> userManager) {
          _bd = context;
          _webHostEnvironment = webHostEnvironment;
+         _userManager = userManager;
       }
 
       // GET: Animais
       public async Task<IActionResult> Index() {
 
-         var listaAnimais = _bd.Animais.Include(a => a.Criador).Include(a => a.Raca);
+         // var auxiliar
+         string idDoUserAutenticado = _userManager.GetUserId(User);
+
+
+         /// SELECT *
+         /// FROM Animais a INNER JOIN Criador c ON a.CriadorFK=c.Id
+         ///                INNER JOIN Raca r ON a.RacaFK=r.Id
+         /// WHERE c.UserId = id da pessoa autenticada
+         var listaAnimais = _bd.Animais
+                               .Include(a => a.Criador)
+                               .Include(a => a.Raca)
+                               .Where(a => a.Criador.UserId == idDoUserAutenticado)
+                               ;
 
          return View(await listaAnimais.ToListAsync());
 
@@ -75,7 +95,7 @@ namespace CriadorCaes.Controllers {
       public IActionResult Create() {
 
          // prepara os dados para colocar dados nas dropdowns do formulário
-         ViewData["CriadorFK"] = new SelectList(_bd.Criadores, "Id", "Nome");
+         //       ViewData["CriadorFK"] = new SelectList(_bd.Criadores, "Id", "Nome");
          ViewData["RacaFK"] = new SelectList(_bd.Racas, "Id", "Nome");
 
          // invoca a view
@@ -111,14 +131,50 @@ namespace CriadorCaes.Controllers {
             ModelState.AddModelError("", "É necessário escolher a Raça do cão/cadela.");
          }
          else {
-            // validação do Criador
-            if (animal.CriadorFK == 0) {
-               ModelState.AddModelError("", "Tem de escolher o Criador do cão/cadela.");
+            //// validação do Criador
+            //if (animal.CriadorFK == 0) {
+            //   ModelState.AddModelError("", "Tem de escolher o Criador do cão/cadela.");
+            //}
+            //else {
+            // existe foto? é válida?
+            if (fotografia == null) {
+               // não há foto.
+               // adiciona-se a foto prédefinida
+               animal.ListaFotografias
+                     .Add(new Fotografias {
+                        DataFotografia = DateTime.Now,
+                        Local = "No foto",
+                        NomeFicheiro = "noAnimal.jpg"
+                     });
             }
             else {
-               // existe foto? é válida?
-               if (fotografia == null) {
-                  // não há foto.
+               // há ficheiro.
+               // Mas, será válido?
+               if (fotografia.ContentType == "image/jpeg" ||
+                  fotografia.ContentType == "image/png") {
+                  // imagem válida
+                  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
+                  // vamos processar a imagem
+
+                  // definir o nome da imagem
+                  Guid g = Guid.NewGuid();
+                  nomeFoto = g.ToString();
+                  string extensaoDaFoto =
+                     Path.GetExtension(fotografia.FileName).ToLower();
+                  nomeFoto += extensaoDaFoto;
+                  // adiciona-se a foto à lista de fotografias
+                  animal.ListaFotografias
+                        .Add(new Fotografias {
+                           DataFotografia = DateTime.Now,
+                           Local = "",
+                           NomeFicheiro = nomeFoto
+                        });
+                  // preparar a foto para ser guardada
+                  // no disco rígido do servidor
+                  existeFoto = true;
+               }
+               else {
+                  // existe ficheiro, mas não é válido
                   // adiciona-se a foto prédefinida
                   animal.ListaFotografias
                         .Add(new Fotografias {
@@ -127,110 +183,83 @@ namespace CriadorCaes.Controllers {
                            NomeFicheiro = "noAnimal.jpg"
                         });
                }
-               else {
-                  // há ficheiro.
-                  // Mas, será válido?
-                  if (fotografia.ContentType == "image/jpeg" ||
-                     fotografia.ContentType == "image/png") {
-                     // imagem válida
-                     // https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
-                     // vamos processar a imagem
-
-                     // definir o nome da imagem
-                     Guid g = Guid.NewGuid();
-                     nomeFoto = g.ToString();
-                     string extensaoDaFoto =
-                        Path.GetExtension(fotografia.FileName).ToLower();
-                     nomeFoto += extensaoDaFoto;
-                     // adiciona-se a foto à lista de fotografias
-                     animal.ListaFotografias
-                           .Add(new Fotografias {
-                              DataFotografia = DateTime.Now,
-                              Local = "",
-                              NomeFicheiro = nomeFoto
-                           });
-                     // preparar a foto para ser guardada
-                     // no disco rígido do servidor
-                     existeFoto = true;
-                  }
-                  else {
-                     // existe ficheiro, mas não é válido
-                     // adiciona-se a foto prédefinida
-                     animal.ListaFotografias
-                           .Add(new Fotografias {
-                              DataFotografia = DateTime.Now,
-                              Local = "No foto",
-                              NomeFicheiro = "noAnimal.jpg"
-                           });
-                  }
-               }
+            }
 
 
-               // atribuir o valor do PrecoCompraAux, se existir,
-               // ao atributo PrecoCompra
-               if (!string.IsNullOrEmpty(animal.PrecoCompraAux)) {
-                  animal.PrecoCompra = Convert.ToDecimal(animal.PrecoCompraAux.Replace('.', ','));
-               }
+            // atribuir o valor do PrecoCompraAux, se existir,
+            // ao atributo PrecoCompra
+            if (!string.IsNullOrEmpty(animal.PrecoCompraAux)) {
+               animal.PrecoCompra = Convert.ToDecimal(animal.PrecoCompraAux.Replace('.', ','));
+            }
+
+
+            // atribuir o CRIADOR ao novo animal
+            string idDoUserAutenticado = _userManager.GetUserId(User);
+            int idCriador = await _bd.Criadores
+                                     .Where(c => c.UserId == idDoUserAutenticado)
+                                     .Select(c => c.Id)
+                                     .FirstOrDefaultAsync();
+            animal.CriadorFK = idCriador;
 
 
 
-               // Validação final dos dados recebidos do browser
-               // só se avança, se forem corretos. Ie, se respeitarem as regras
-               // definidas no Model
-               if (ModelState.IsValid) {
+            // Validação final dos dados recebidos do browser
+            // só se avança, se forem corretos. Ie, se respeitarem as regras
+            // definidas no Model
+            if (ModelState.IsValid) {
 
-                  try {
-                     // adicionar os dados do animal à BD
-                     _bd.Add(animal);
-                     // efetuar COMMIT dos dados
-                     await _bd.SaveChangesAsync();
+               try {
+                  // adicionar os dados do animal à BD
+                  _bd.Add(animal);
+                  // efetuar COMMIT dos dados
+                  await _bd.SaveChangesAsync();
 
-                     // agora já posso guardar a imagem no disco 
-                     // rígido do servidor
-                     if (existeFoto) {
-                        // definir o locar onde a foto vai ser guardada
-                        // para isso vamos perguntar ao servidor onde está 
-                        // a pasta wwwroot/imagens
-                        string nomeLocalizacaoImagem = _webHostEnvironment.WebRootPath;
+                  // agora já posso guardar a imagem no disco 
+                  // rígido do servidor
+                  if (existeFoto) {
+                     // definir o locar onde a foto vai ser guardada
+                     // para isso vamos perguntar ao servidor onde está 
+                     // a pasta wwwroot/imagens
+                     string nomeLocalizacaoImagem = _webHostEnvironment.WebRootPath;
 
-                        //    - falta definir o nome que o ficheiro vai ter no disco rígido
-                        nomeLocalizacaoImagem =
-                           Path.Combine(nomeLocalizacaoImagem, "imagens");
+                     //    - falta definir o nome que o ficheiro vai ter no disco rígido
+                     nomeLocalizacaoImagem =
+                        Path.Combine(nomeLocalizacaoImagem, "imagens");
 
-                        //    - falta garantir que a pasta onde se vai guardar o ficheiro existe
-                        if (!Directory.Exists(nomeLocalizacaoImagem)) {
-                           Directory.CreateDirectory(nomeLocalizacaoImagem);
-                        }
-
-                        //    - agora já é possível guardar a imagem
-                        //         - definir o nome da imagem no disco rígido
-                        string nomeFotoImagem = Path.Combine(nomeLocalizacaoImagem, nomeFoto);
-
-                        //         - criar objeto para manipular a imagem
-                        using var stream = new FileStream(nomeFotoImagem, FileMode.Create);
-
-                        //         - guardar, realmente, o ficheiro no disco rígido
-                        await fotografia.CopyToAsync(stream);
+                     //    - falta garantir que a pasta onde se vai guardar o ficheiro existe
+                     if (!Directory.Exists(nomeLocalizacaoImagem)) {
+                        Directory.CreateDirectory(nomeLocalizacaoImagem);
                      }
 
+                     //    - agora já é possível guardar a imagem
+                     //         - definir o nome da imagem no disco rígido
+                     string nomeFotoImagem = Path.Combine(nomeLocalizacaoImagem, nomeFoto);
 
+                     //         - criar objeto para manipular a imagem
+                     using var stream = new FileStream(nomeFotoImagem, FileMode.Create);
 
-
-                     // redirecionar o utilizador para a página inicial
-                     return RedirectToAction(nameof(Index));
+                     //         - guardar, realmente, o ficheiro no disco rígido
+                     await fotografia.CopyToAsync(stream);
                   }
-                  catch (Exception) {
-                     ModelState.AddModelError("", "Ocorreu um erro com a adição dos dados do " + animal.Nome);
-                     // throw;
-                  }
+
+
+
+
+                  // redirecionar o utilizador para a página inicial
+                  return RedirectToAction(nameof(Index));
                }
-
+               catch (Exception) {
+                  ModelState.AddModelError("", "Ocorreu um erro com a adição dos dados do " + animal.Nome);
+                  // throw;
+               }
             }
+
          }
+         //  }
          // se chego aqui, é porque os dados não eram válidos
          // devolve-se o controlo à View
          // preparar os dados para as dropdown
-         ViewData["CriadorFK"] = new SelectList(_bd.Criadores, "Id", "Nome", animal.CriadorFK);
+         //     ViewData["CriadorFK"] = new SelectList(_bd.Criadores, "Id", "Nome", animal.CriadorFK);
          ViewData["RacaFK"] = new SelectList(_bd.Racas, "Id", "Nome", animal.RacaFK);
          return View(animal);
       }
@@ -241,12 +270,25 @@ namespace CriadorCaes.Controllers {
             return NotFound();
          }
 
-         var animais = await _bd.Animais.FindAsync(id);
+
+
+         // var auxiliar
+         string idDoUserAutenticado = _userManager.GetUserId(User);
+
+
+         var animais = await _bd.Animais
+                                .Where(a => a.Id == id &&
+                                            a.Criador.UserId == idDoUserAutenticado)
+                                .FirstOrDefaultAsync()
+          ;
+
          if (animais == null) {
             return NotFound();
          }
+
          ViewData["CriadorFK"] = new SelectList(_bd.Criadores, "Id", "Email", animais.CriadorFK);
          ViewData["RacaFK"] = new SelectList(_bd.Racas, "Id", "Id", animais.RacaFK);
+
          return View(animais);
       }
 
