@@ -8,9 +8,9 @@ namespace CriadorCaes.Models {
 
       public Criadores() {
          // inicializar a lista de animais do criador
-         ListaAnimais=new HashSet<Animais>();
+         ListaAnimais = new HashSet<Animais>();
          // inicializar a lista de Raças que o Criador cria
-         ListaRacas=new HashSet<Racas>();
+         ListaRacas = new HashSet<Racas>();
       }
 
 
@@ -72,6 +72,19 @@ namespace CriadorCaes.Models {
                     ErrorMessage = "Deve escrever {1} dígitos no número {0}.")]
       [RegularExpression("9[1236][0-9]{7}")] // exemplo com indicativo internacional: ((+|00)[0-9]{2,5})?[0-9]{5,9}
       public string Telemovel { get; set; }
+
+
+      // *************************************************
+      /// <summary>
+      /// Chave de ligação entre a base de dados da autenticação
+      /// e a base de dados do 'negócio'
+      /// </summary>
+      public string UserId { get; set; }
+
+      // *************************************************
+
+
+
 
       /* ++++++++++++++++++++++++++++++++++++++++++++++++
        * relacionamentos associados ao Criador
