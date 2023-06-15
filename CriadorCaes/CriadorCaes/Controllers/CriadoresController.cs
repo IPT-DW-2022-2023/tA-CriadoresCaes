@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CriadorCaes.Data;
 using CriadorCaes.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CriadorCaes.Controllers
 {
+   [Authorize] // força a autenticação
     public class CriadoresController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -19,7 +21,11 @@ namespace CriadorCaes.Controllers
             _context = context;
         }
 
-        // GET: Criadores
+
+
+
+      // GET: Criadores
+      [AllowAnonymous] // anula a restrição de autenticação
         public async Task<IActionResult> Index()
         {
               return View(await _context.Criadores.ToListAsync());
@@ -43,27 +49,27 @@ namespace CriadorCaes.Controllers
             return View(criadores);
         }
 
-        // GET: Criadores/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
+        //// GET: Criadores/Create
+        //public IActionResult Create()
+        //{
+        //    return View();
+        //}
 
-        // POST: Criadores/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nome,NomeComercial,Morada,CodPostal,Email,Telemovel")] Criadores criadores)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Add(criadores);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(criadores);
-        }
+        //// POST: Criadores/Create
+        //// To protect from overposting attacks, enable the specific properties you want to bind to.
+        //// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Create([Bind("Id,Nome,NomeComercial,Morada,CodPostal,Email,Telemovel")] Criadores criadores)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        _context.Add(criadores);
+        //        await _context.SaveChangesAsync();
+        //        return RedirectToAction(nameof(Index));
+        //    }
+        //    return View(criadores);
+        //}
 
         // GET: Criadores/Edit/5
         public async Task<IActionResult> Edit(int? id)

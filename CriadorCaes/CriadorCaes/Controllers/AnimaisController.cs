@@ -7,8 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using CriadorCaes.Data;
 using CriadorCaes.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CriadorCaes.Controllers {
+
+   [Authorize]
    public class AnimaisController : Controller {
 
       /// <summary>
